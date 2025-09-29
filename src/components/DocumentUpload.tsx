@@ -1,18 +1,13 @@
 import { useState, useCallback } from "react";
-import { Upload, FileText, X, CheckCircle } from "lucide-react";
+import { Upload, FileText, X, CheckCircle, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
+import { apiService, Document } from "@/services/api";
 
 interface DocumentUploadProps {
-  onUpload: (docs: Array<{
-    id: string;
-    name: string;
-    type: string;
-    size: string;
-    extractedText: string;
-  }>) => void;
+  onUpload: (docs: Document[]) => void;
 }
 
 export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
@@ -20,6 +15,7 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDrag = useCallback((e: React.DragEvent) => {
     e.preventDefault();
@@ -57,29 +53,49 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
     setSelectedFiles(prev => prev.filter((_, i) => i !== index));
   };
 
-  const simulateUpload = async () => {
+  const uploadDocuments = async () => {
+    if (selectedFiles.length === 0) return;
+
     setUploading(true);
     setUploadProgress(0);
+    setError(null);
 
-    // Simulate upload progress
-    for (let i = 0; i <= 100; i += 10) {
-      setUploadProgress(i);
-      await new Promise(resolve => setTimeout(resolve, 100));
+    try {
+      const uploadedDocs: Document[] = [];
+
+      for (let i = 0; i < selectedFiles.length; i++) {
+        const file = selectedFiles[i];
+        setUploadProgress((i / selectedFiles.length) * 100);
+
+        try {
+          const response = await apiService.uploadDocument(file);
+          uploadedDocs.push({
+            id: response.doc_id,
+            filename: response.filename,
+            file_type: file.type.includes('pdf') ? 'PDF' : 'TXT',
+            processed: true,
+            created_at: new Date().toISOString(),
+            query_count: 0
+          });
+        } catch (error) {
+          console.error(`Failed to upload ${file.name}:`, error);
+          setError(`Failed to upload ${file.name}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+      }
+
+      setUploadProgress(100);
+      
+      if (uploadedDocs.length > 0) {
+        onUpload(uploadedDocs);
+        setSelectedFiles([]);
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      setError(error instanceof Error ? error.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
     }
-
-    // Simulate document processing
-    const processedDocs = selectedFiles.map((file, index) => ({
-      id: `${Date.now()}-${index}`,
-      name: file.name,
-      type: file.type.includes('pdf') ? 'pdf' : 'txt',
-      size: `${(file.size / 1024).toFixed(1)}KB`,
-      extractedText: `This is simulated extracted text from ${file.name}. In a real implementation, this would contain the actual extracted content from the document.`
-    }));
-
-    onUpload(processedDocs);
-    setSelectedFiles([]);
-    setUploading(false);
-    setUploadProgress(0);
   };
 
   const formatFileSize = (bytes: number) => {
@@ -178,9 +194,16 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
           </div>
         )}
 
+        {error && (
+          <div className="flex items-center gap-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+            <AlertCircle className="h-4 w-4 text-destructive" />
+            <p className="text-sm text-destructive">{error}</p>
+          </div>
+        )}
+
         <div className="flex gap-2">
           <Button 
-            onClick={simulateUpload}
+            onClick={uploadDocuments}
             disabled={selectedFiles.length === 0 || uploading}
             className="flex-1"
           >
@@ -189,7 +212,10 @@ export const DocumentUpload = ({ onUpload }: DocumentUploadProps) => {
           {selectedFiles.length > 0 && !uploading && (
             <Button
               variant="outline"
-              onClick={() => setSelectedFiles([])}
+              onClick={() => {
+                setSelectedFiles([]);
+                setError(null);
+              }}
             >
               Clear
             </Button>

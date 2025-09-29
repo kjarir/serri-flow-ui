@@ -12,11 +12,12 @@ import { FeedbackPanel } from "@/components/FeedbackPanel";
 
 const Dashboard = () => {
   const [uploadedDocs, setUploadedDocs] = useState<Array<{
-    id: string;
-    name: string;
-    type: string;
-    size: string;
-    extractedText: string;
+    id: number;
+    filename: string;
+    file_type: string;
+    processed: boolean;
+    created_at: string;
+    query_count: number;
   }>>([]);
 
   const [queries, setQueries] = useState<Array<{
@@ -85,11 +86,15 @@ const Dashboard = () => {
                           <div className="flex items-center gap-3">
                             <FileText className="h-4 w-4 text-muted-foreground" />
                             <div>
-                              <p className="font-medium text-sm">{doc.name}</p>
-                              <p className="text-xs text-muted-foreground">{doc.size}</p>
+                              <p className="font-medium text-sm">{doc.filename}</p>
+                              <p className="text-xs text-muted-foreground">
+                                {new Date(doc.created_at).toLocaleDateString()} • {doc.query_count} queries
+                              </p>
                             </div>
                           </div>
-                          <Badge variant="secondary">{doc.type.toUpperCase()}</Badge>
+                          <Badge variant={doc.processed ? "default" : "secondary"}>
+                            {doc.file_type}
+                          </Badge>
                         </div>
                       ))
                     )}
@@ -101,6 +106,7 @@ const Dashboard = () => {
 
           <TabsContent value="query" className="animate-fade-in">
             <QueryInterface 
+              documents={uploadedDocs}
               onQuery={(query, response) => {
                 const newQuery = {
                   id: Date.now().toString(),
