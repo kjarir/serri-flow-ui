@@ -1,5 +1,6 @@
 import { Bot, FileText, Users, BarChart3, Zap, Shield } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { motion } from "framer-motion";
 
 const features = [
   {
@@ -35,10 +36,31 @@ const features = [
 ];
 
 export const FeaturesSection = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.15
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 50 },
+    visible: { opacity: 1, y: 0 }
+  };
+
   return (
     <section className="section-padding bg-background">
       <div className="section-container">
-        <div className="text-center mb-16 animate-fade-in">
+        <motion.div 
+          className="text-center mb-16"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Everything You Need to Automate Customer Support
           </h2>
@@ -46,29 +68,45 @@ export const FeaturesSection = () => {
             Powerful features designed to transform your customer service from reactive to proactive, 
             while maintaining the personal touch your customers love.
           </p>
-        </div>
+        </motion.div>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <motion.div 
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+        >
           {features.map((feature, index) => (
-            <Card 
-              key={feature.title} 
-              className="feature-card animate-fade-in hover:shadow-glow group"
-              style={{ animationDelay: `${index * 0.1}s` }}
+            <motion.div
+              key={feature.title}
+              variants={itemVariants}
+              whileHover={{ 
+                y: -10, 
+                scale: 1.02,
+                transition: { duration: 0.2 }
+              }}
             >
-              <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle className="text-xl">{feature.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <CardDescription className="text-base leading-relaxed">
-                  {feature.description}
-                </CardDescription>
-              </CardContent>
-            </Card>
+              <Card className="feature-card hover:shadow-glow group h-full">
+                <CardHeader>
+                  <motion.div 
+                    className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors"
+                    whileHover={{ rotate: 360 }}
+                    transition={{ duration: 0.6 }}
+                  >
+                    <feature.icon className="h-6 w-6 text-primary" />
+                  </motion.div>
+                  <CardTitle className="text-xl">{feature.title}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-base leading-relaxed">
+                    {feature.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
